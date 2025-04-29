@@ -1,0 +1,25 @@
+// Módulo: chartUtils.js
+
+// 3. Función exportada
+exports.chartArea = function(selectedSHAC,tablaArea) {
+  
+  
+  // 3.3 Imprime en consola (puedes comentar estas líneas si no las quieres)
+  print('Área por periodo (ha) — ' + selectedSHAC, tablaArea);
+  var chart = ui.Chart.feature.byFeature({
+    features: tablaArea,
+    xProperty: 'periodo',
+    yProperties: ['area_ha']
+  })
+  .setChartType('ColumnChart')
+  .setOptions({
+    title: 'Área (ha) por Periodo — ' + selectedSHAC,
+    hAxis: { title: 'Periodo' },
+    vAxis: { title: 'Área (ha)' },
+    legend: { position: 'none' }
+  });
+
+  
+  // 3.4 Devuelve la tabla por si quieres procesarla
+  return chart;
+};

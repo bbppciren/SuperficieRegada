@@ -1,0 +1,31 @@
+// Cargar los assets
+var shac_valparaiso = ee.FeatureCollection("projects/ee-corfobbppciren2023/assets/Geometrias/SHACs_V_Region");
+var uso_suelo = ee.FeatureCollection('projects/ee-corfobbppciren2023/assets/Uso_de_Suelo/cut_valparaiso_2020_FixedGeom');
+
+// Función para recortar uso_suelo con la geometría del feature actual
+var recortarUsoSuelo = function(feature) {
+  var geometria = feature.geometry();
+  var recorte = uso_suelo.filterBounds(geometria);
+  return ee.FeatureCollection(recorte).map(function(f) {
+    return f.set('SHAC', feature.get('SHAC'));
+  });
+};
+
+// Aplicar la función de recorte a cada feature en shac_valparaiso
+shac_valparaiso.evaluate(function(shacFeatures) {
+  shacFeatures.features.forEach(function(shacFeature) {
+    var feature = ee.Feature(shacFeature);
+    var recorte = recortarUsoSuelo(feature);
+    
+    // Obtener el nombre de SHAC y reemplazar espacios con "_"
+    var shac_nombre = feature.get('SHAC').getInfo().replace(/ /g, '_');
+    var nombre = 'uso_suelo_' + shac_nombre;
+    
+    // Exportar el resultado a un nuevo asset
+    Export.table.toAsset({
+      collection: recorte,
+      description: nombre,
+      assetId: 'projects/ee-corfobbppciren2023/assets/Uso_de_Suelo/' + nombre
+    });
+  });
+});

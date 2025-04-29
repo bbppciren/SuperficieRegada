@@ -1,0 +1,167 @@
+
+function checkImageExistence(path) {
+  try {
+    // Intenta obtener el asset. Si no existe, lanzará una excepción.
+    var asset = ee.data.getAsset(path);
+    return asset !== null;
+  } catch (e) {
+    // Si hay un error (por ejemplo, asset no encontrado), devuelve false.
+    return false;
+  }
+}
+
+exports.collection = function(basePath, selectedSHAC, selectedBand,exceptions,claves,c,s) {
+  
+  var link_name;
+  var imageIds;
+  
+  //1. Revisar que selectedSHAC sea distinto de null
+  if(selectedSHAC === undefined){
+    return null;
+  }
+  var link = [];
+  if (claves.indexOf(selectedSHAC) !== -1){
+
+        var listaShp = exceptions[selectedSHAC];
+        for (var i = 0; i < listaShp.length; i++) {
+          link_name = selectedBand + "_SHAC_" + listaShp[i];
+          imageIds =basePath +link_name;
+        
+          link.push(ee.FeatureCollection(imageIds));
+        }
+        
+    return link;
+  }
+  var shpSHAC = [selectedSHAC.replace(/\s*-\s*/g, ' ').split(' ').join('_')];
+  //1.2. Formar el nombre completo
+  link_name = selectedBand + "_SHAC_" + shpSHAC;
+  
+  imageIds = basePath +link_name;
+  if(checkImageExistence(imageIds)){
+    link = [ee.FeatureCollection(imageIds)];
+      return link;
+
+  }else{
+    print("no existe el archivo "+ imageIds);
+    return link;
+  }
+};
+
+
+exports.histCollection = function(selectedSHAC, selectedBand,exceptions,claves,c,s) {
+  
+  var link_name;
+  var imageIds;
+  var basePath = "users/corfobbppciren2023/AR_Segmentacion/";
+  //1. Revisar que selectedSHAC sea distinto de null
+  if(selectedSHAC === undefined){
+    return null;
+  }
+  var link = [];
+  if (claves.indexOf(selectedSHAC) !== -1){
+
+        var listaShp = exceptions[selectedSHAC];
+        for (var i = 0; i < listaShp.length; i++) {
+          link_name = selectedBand  + "_"+ listaShp[i];
+          imageIds =basePath +link_name;
+          link.push(ee.FeatureCollection(imageIds));
+        }
+        
+    return link;
+  }
+  var shpSHAC = [selectedSHAC.replace(/\s*-\s*/g, ' ').split(' ').join('_')];
+  //1.2. Formar el nombre completo
+  link_name = selectedBand + "_"+shpSHAC;
+  
+  imageIds = basePath +link_name;
+  if(checkImageExistence(imageIds)){
+    link = [ee.FeatureCollection(imageIds)];
+    
+      return link;
+
+  }else{
+    print("no existe el archivo "+ imageIds);
+    
+    return link;
+  }
+};
+
+
+
+
+
+
+
+
+
+exports.metrics = function(selectedSHAC, selectedBand,exceptions,claves, assetsList, c,s){
+  // Llama a la función con el filtro "Acuifero"
+  var assetsFiltrados = filtrarAssetsPorNombre(assetsList, selectedSHAC);
+
+};
+
+var folderPath = 'users/corfobbppciren2023/SR';
+var assetsList = ee.data.listAssets(folderPath).assets;
+print(assetsList);
+var selectedSHAC = 'Acuifero 1 San Felipe';
+
+function filteFeature(assetsList, selectedSHAC) {
+  var shpSHAC = selectedSHAC.replace(/\s*-\s*/g, ' ').split(' ').join('_');
+  
+  var filteredAssets = assetsList.filter(function(asset) {
+    return asset.id.indexOf(shpSHAC) !== -1; 
+  });
+
+  var areasDict = {};
+
+  // Iterar a través de los assets filtrados y calcular el área
+  filteredAssets.forEach(function(asset) {
+    var assetId = asset.id;
+
+    // Extraer el rango de años del ID
+    var yearRange = assetId.split('/').pop().split('_SHAC')[0]; // Obtiene '2019_2020', etc.
+
+    // Cargar el asset como FeatureCollection
+    var featureCollection = ee.FeatureCollection(assetId);
+
+    // Calcular el área total
+    var area = featureCollection.geometry().area().divide(1e6); // Convertir a km²
+    areasDict[yearRange] = area;
+  });
+  return areasDict;
+}
+
+//var a = filteFeature(assetsList,selectedSHAC);
+//print('a', a);
+
+function filteFeature2(assetsList, selectedSHAC) {
+  var shpSHAC = selectedSHAC.replace(/\s*-\s*/g, ' ').split(' ').join('_');
+  
+  var filteredAssets = assetsList.filter(function(asset) {
+    return asset.id.indexOf(shpSHAC) !== -1; 
+  });
+
+  var areasDict = {};
+filteredAssets.forEach(function(asset) {
+  var assetId = asset.id;
+
+    // Extraer el rango de años del ID
+    var yearRange = assetId.split('/').pop().split('_SHAC')[0]; // Obtiene '2019_2020', etc.
+
+    // Cargar el asset como FeatureCollection
+    var featureCollection = ee.FeatureCollection(assetId);
+    var sumaTotal = featureCollection.reduceColumns({
+      reducer: ee.Reducer.sum(),
+      selectors: ['count'] // Nombre de la columna
+});
+  var sumNum = ee.Number(sumaTotal.get('sum')).divide(1e6);
+print('sumaTotal',sumaTotal.get('sum'));
+  areasDict[yearRange] = sumNum;
+});
+
+  return areasDict;
+}
+//var b = filteFeature2(assetsList,selectedSHAC);
+
+//print('b', b);
+//print(typeof(b['2019_2020']));

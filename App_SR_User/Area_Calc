@@ -1,0 +1,42 @@
+// 1. Ruta de tu carpeta de assets
+var folderPath = 'users/corfobbppciren2023/SR';
+var assets = ee.data.listAssets(folderPath).assets;
+
+// 3. Filtrar solo los assets que siguen el patrón *_SHAC_*
+var shapefiles = assets.filter(function(a) {
+  return a.id.indexOf('_SHAC_') !== -1;
+});
+
+// 4. Mapear cada asset a un ee.Feature con propiedades (shac, periodo, area_ha)
+var features = shapefiles.map(function(a) {
+  // a.id es algo como 'users/.../2019_2020_SHAC_Rocas_de_Santo_Domingo'
+  var assetId = a.id;
+  
+  // Extraer el "filename"
+  var filename = assetId.split('/').pop();
+  
+  // Dividir en [periodo, nombreSeguro]
+  var parts = filename.split('_SHAC_');
+  var periodo = parts[0];
+  var nombreSeguro = parts[1];
+  
+  // Devolver el nombre legible (espacios en lugar de guiones bajos)
+  var shacName = nombreSeguro.replace(/_/g, ' ');
+  
+  // Cargar la colección y calcular área total (m² → ha)
+  var fc = ee.FeatureCollection(assetId);
+  var areaHa = ee.Number(fc.geometry().area()).divide(10000);
+  
+  // Crear un feature “sin geometría”
+  return ee.Feature(null, {
+    shac: shacName,
+    periodo: periodo,
+    area_ha: areaHa
+  });
+});
+
+// 5. Construir tu “dataframe” como FeatureCollection
+var tablaArea = ee.FeatureCollection(features);
+
+// 6. Imprimir en consola
+print('Tabla de áreas (ha) por SHAC y periodo:', tablaArea);

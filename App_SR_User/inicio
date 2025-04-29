@@ -1,0 +1,128 @@
+// Funciones que solo se correran al principio de la aplicacion
+var startTime = new Date().getTime();
+var folderPath = 'users/corfobbppciren2023/SR';
+var listAssets = ee.data.listAssets(folderPath).assets;
+
+var temp_disp = [];
+var acui_names = [];
+var repetido = [];
+
+
+exports.shac_names = ['Acuifero 1 San Felipe', 'Acuifero 2 Putaendo', 'Acuifero 3 Panquehue', 
+'Acuifero 4 Catemu', 'Acuifero 5 Llay Llay', 'Acuifero 6 Nogales-Hijuelas', 
+'Acuifero 7 Quillota', 'Acuifero 8 Aconcagua desembocadura', 'Acuifero 9 Limache', 
+'Algarrobo', 'Altos de Rapel', 'Concon', 'Curauma', 'Dunas de Quintero', 'El Tabo', 
+'Estero Cachagua', 'Estero Cartagena', 'Estero Casablanca Desembocadura', 'Estero Catapilco',
+'Estero El Membrillo AR', 'Estero El Pangal', 'Estero El Rosario Costeras V', 
+'Estero El Sauce', 'Estero Guaquen', 'Estero La Canela', 'Estero Laguna Verde', 
+'Estero Las Salinas Sur', 'Estero Los Molles', 'Estero Mantagua', 'Estero Papudo', 
+'Estero Pucalan', 'Estero Puchuncavi', 'Estero San Jeronimo', 'Estero San Jose', 
+'Estero Vina del Mar', 'Horcon', 'La Laguna Catapilco', 'La Vinilla-Casablanca', 
+'Lo Orozco', 'Lo Ovalle', 'Los Perales', 'Maipo Desembocadura', 'Maitenlahue', 'Melipilla',
+'Puangue Alto', 'Punta Gallo', 'Punta Pichicuy', 'Quintay', 'Rio Rapel bajo junta Estero Rosario', 
+'Rocas El Caracol', 'Rocas Pichidangui', 'Roca Playas Los Molles', 'Rocas Punta Curaumilla', 
+'Rocas Punta La Ligua', 'Rocas Punta Panul', 'Rocas Zapallar', 'Rocas de Santo Domingo', 
+'Sector 1 Rio Pedernal', 'Sector 10 Rio Petorca Oriente', 'Sector 11 Rio La Ligua Costa', 
+'Sector 12 Estero Patagua', 'Sector 2 Estero Las Palmas', 'Sector 3 Rio del Sobrante', 
+'Sector 4 Rio Petorca Poniente', 'Sector 5 Estero Alicahue', 'Sector 6 Rio La Ligua Oriente', 
+'Sector 7 Rio La Ligua Cabildo', 'Sector 8 Rio La Ligua Pueblo', 'Sector 9 Los Angeles', 
+'Sector Renaca', 'Sector San Antonio', 'Sector Valparaiso', 'Yali Bajo El Prado'];
+
+exports.ClaseStyles = ee.Dictionary({
+  'AREAS ARTIFICIALES': {color: '#FF5733'}, // Orange Red
+  'AREAS DESPROVISTAS DE VEGETACION': {color: '#F0E68C'}, // Khaki
+  'BOSQUES': {color: '#228B22'}, // Forest Green
+  'CUERPOS DE AGUA': {color: '#1E90FF'}, // Dodger Blue
+  'HUMEDALES': {color: '#40E0D0'}, // Turquoise
+  'NIEVES Y GLACIARES': {color: '#ADD8E6'}, // Light Blue
+  'PLANTACIONES FORESTALES': {color: '#6A5ACD'}, // Slate Blue
+  'PRADERAS Y MATORRALES': {color: '#98FB98'}, // Pale Green
+  'TERRENOS AGRICOLAS': {color: '#D2B48C'}  // Tan
+});
+
+
+
+//Estado inicial de excepciones hasta temporada 2022_2023
+var exceptions = {};
+
+function getAcuiferoKeyFromInput(acuiferoName) {
+  var baseName = acuiferoName.replace(/_/g, " ").replace(/ dividido parte \d+$/, "");
+  baseName = String(baseName);
+  
+  for (var key in exceptions) {
+    if (String(baseName).indexOf(key) !== -1) {
+      return [baseName,key];
+    }
+  }
+  return [baseName,null];
+}
+
+//print(listAssets);
+for(var i =0; i<listAssets.length; i++){
+  //print('listAssets[i]',listAssets[i]);
+  var idn = listAssets[i].id;
+  //print('idn', idn);
+  var input = idn.split('/')[3];
+  //print('input',input);
+  var match = input.match(/(\d{4})_(\d{4})_SHAC_(.*)/);
+  var temp = match[1] + '_' + match[2];
+  var acuifero = match[3];
+  
+  if(temp !== temp_disp[temp_disp.length -1]){
+      temp_disp.push(temp);
+  }
+  acui_names.push(acuifero);
+  
+  // Revisar si contiene string 'dividido_parte'
+  var check = acuifero.match("dividido_parte");
+
+  if(check){
+  
+  var result = getAcuiferoKeyFromInput(acuifero); //Return null o valor
+  var key = result[1];
+  var value = result[0];
+  
+  // Acuifero esta dentro de las excepciones:
+  if(key){
+    if (exceptions[key]) {
+      if (exceptions[key].indexOf(acuifero) === -1) {
+        exceptions[key].push(acuifero);
+        }
+    }
+  }else{
+  
+  // Acuifero no en el diccionario -> agregar a diccionario
+  exceptions[result[0]] =[acuifero];
+  
+  }
+  }
+
+} 
+  
+var maxLength = 0;
+for (var key in exceptions) {
+  var currentLength = exceptions[key].length;
+  if (currentLength > maxLength) {
+    maxLength = currentLength;
+  }
+}
+
+
+exports.getTemp = function(){
+  return temp_disp;
+};
+
+exports.getExceptions = function(){
+  return exceptions;
+};
+
+exports.getMaxLength = function(){
+  return maxLength;
+};
+
+exports.listAsset = listAssets;
+var endTime = new Date().getTime();
+var executionTime = endTime - startTime;
+print('Tiempo de ejecución inicio (ms):', executionTime);
+  
+

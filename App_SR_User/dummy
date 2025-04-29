@@ -1,0 +1,32 @@
+// main.js
+
+// Importa tu módulo (ajusta el path a donde lo subiste)
+
+var chartUtils = require('users/corfobbppciren2023/App_SR_User:test_SR_Calc');
+// Define tus periodos si quieres otros distintos al default
+var myPeriods = [
+  "2019_2020",
+  "2020_2021",
+  "2021_2022",
+  "2022_2023",
+  "2023_2024"
+  
+];
+var basePath = "users/corfobbppciren2023/SR/";
+
+var featuresConArea = myPeriods.map(function(periodo) {
+    var assetId = basePath + periodo + "_SHAC_" + "Rocas_de_Santo_Domingo";
+    var fc = ee.FeatureCollection(assetId);
+    var areaHa = ee.Number(fc.geometry().area()).divide(10000);
+    return ee.Feature(null, {
+      periodo: periodo,
+      area_ha: areaHa
+    });
+  });
+  
+  // 3.2 Crea tu "DataFrame" como FeatureCollection
+  var tablaArea = ee.FeatureCollection(featuresConArea);
+
+
+// Llama a la función; opcionalmente recoge la tabla devuelta
+var tablaDeRocas = chartUtils.chartArea("Rocas_de_Santo_Domingo", tablaArea);
